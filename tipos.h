@@ -1,0 +1,80 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <time.h>
+#include <signal.h>
+#include <pthread.h>
+#include <stdbool.h>
+
+//para el .env
+typedef struct {
+
+    int N_PLAYERS;
+    int K_BOARDS;
+    int K_ELO;
+    int MAX_ELO_DIFF;
+    int TURN_DELAY_MS;
+
+    float REENTER_PROBABILITY;
+
+    char SNAPSHOT_PATH[256];
+
+} Config;
+
+
+
+
+//tienen mutex para proteger a cada jugador y a cada tablero. 
+
+typedef struct {
+    int id;
+
+    int elo;
+
+    int ganadas;
+    int perdidas;
+    int empatadas;
+
+    pthread_t thread;
+
+    pthread_mutex_t lock;
+    pthread_cond_t cond_ready; // para esperar oponente o turno (??)
+
+} Jugador;
+
+
+typedef struct {
+    int id; //id del tablero
+
+    //ids de los jugadores que están jugando en el tablero. Si no hay jugadores, ambos son -1.
+    int player1_id;
+    int player2_id;
+
+    char grid[3][3];    // estado del tablero: 'X', 'O', ' '
+    int current_turn;   // ID del jugador que le toca
+    bool active;        // 0 si el tablero no está en uso, 1 si está en uso
+    
+    pthread_mutex_t lock;
+    pthread_cond_t cond_turn; // pra coordinar los turnos de los jugadores
+    
+
+
+} Tablero;
+
+
+typedef struct {
+    int id;
+
+    Jugador *p1;
+    Jugador *p2;
+
+    Tablero *board;
+
+    int finished;
+
+} Partida;
+

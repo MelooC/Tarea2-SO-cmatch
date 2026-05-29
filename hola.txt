@@ -59,3 +59,74 @@ no avancé todo lo que planeaba avanzar porque estaba estudiando la materia de n
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢯⣏⡴⣶⣵⣢⢤⢠⡀⡄⢠⠐⡰⢌⡱⠀⡁⡀⠆⡥⠆⡥⣛⡽⣾
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠔⠉⠀⠀⢽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣼⣻⢷⣯⡽⣞⣷⣻⡼⣡⢋⡔⠣⠜⡐⢐⠠⡓⣤⣙⣲⣽⣻⢷
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡿⣽⣞⣷⣻⡴⣣⢜⡱⣊⡕⣊⠠⡙⡰⣭⢷⣯⣿⢿
+
+Hola paulap
+
+como se ejecuta, abajo explico mas a fondo porque es tan cortito
+
+make
+./cmatch
+
+* "make clean" borra los binarios si quieres recompilar de cero, por si te llega a tirar errores
+* Deberias ver 100 lineas tipo "Jugador N entro al lobby" terminando
+  en "En espera: X" y te muestra el elo como la fotito que te mande
+
+Compila limpio, corre sin errores que me hubieran salido perop todavia no juega nada: por
+ahora solo crea los jugadores y los mete a una cola de espera (osea el lobby)
+
+--------que hace cada cosa, asi lo entendi yo --------
+
+* config.env    -> la configuracion (N_PLAYERS, K_BOARDS, etc). Le agregue
+  TURN_DELAY_MS, que faltaba en el archivo aunque la guia lo pide
+
+* tipos.h       -> los structs (Config, Jugador, Tablero, Partida) y las
+  declaraciones del estado global. Le puse un "include guard"
+  (#ifndef TIPOS_H ...) para que no se incluya dos veces y reviente
+
+* main.c        -> lee la config, reserva memoria, inicializa jugadores y
+  tableros, crea los threads, los espera (join) y limpia todo al final
+
+* matchmaking.c -> por ahora tiene el estado global del lobby y la funcion
+  jugador_thread (lo que hace cada jugador). Aca va la logica
+  gorda del paso 3.
+
+* gato.c        -> lo vi y encuentro que esta bien, no lo probe si, ahi si puedes pruebalo tup y ves si funciona bien con como hice los jugadores
+
+* Makefile      -> para compilar todo junto sin escribir el comando largo. (esto lo busque en internet como hacerlo,
+  y asi es mas facil de ejecutrar en vez de escribir todo el codigo para ejecutarlo, no se si haran drama por eso)
+
+-------explicacion para que no te pierdas paulap-------------
+
+1. Sincronizacion. La regla que segui es: "un mutex protege DATOS, no codigo, y
+   vive donde estan esos datos".
+
+* Makefile      -> para compilar todo junto
+
+  * Cada Jugador tiene su propio mutex (protege su elo y sus estadisticas)
+  * Cada Tablero tiene su propio mutex (protege su estado de juego)
+  * Hay un mutex GLOBAL (lobby_mutex) que protege la cola de espera, porque
+    esa cola es compartida, no es de ningun jugador en particular
+
+2. El lobby es una cola en orden de llegada (lobby_espera + lobby_n), el que
+   entra primero queda adelante. Eso nos sirve para el criterio de la
+   guia dee "priorizar al que lleva mas tiempo esperando" del paso 3
+
+3. Cada jugador es un thread (pthread_create) que corre jugador_thread. Al
+   entrar al lobby hace: lock -> me agrego a la cola -> unlock. Ese lock es importante
+   sin el, varios threads se pisan al sumar el contador y se pierden
+   registros. Lo probe sacandolo y el contador llegaba a 3 en vez de 100
+
+4. main hace join de TODOS los threads para que ninguno quede colgado (la guia
+   dice eso), y al final destruye los mutex/cond y libera la memoria.
+
+--------lo que falta por hacer por ahorita------
+
+Paso 3 - Matchmaking: que cada jugador busque un rival compatible en el lobby
+(|ELO_a - ELO_b| <= MAX_ELO_DIFF), priorizando al que lleva mas tiempo
+esperando. Tomar un tablero libre con un SEMAFORO para nunca pasar de K
+partidas simultaneas, minimizando busy-waiting (aca entra cond_ready).
+
+Paso 4 - Tablero + partida: cada tablero activo es un thread; los dos jugadores
+juegan tic-tac-toe aleatorio (con gato.c) con TURN_DELAY_MS de retardo entre
+jugadas.
+

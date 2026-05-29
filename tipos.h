@@ -1,3 +1,6 @@
+#ifndef TIPOS_H
+#define TIPOS_H
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -26,9 +29,7 @@ typedef struct {
 } Config;
 
 
-
-
-//tienen mutex para proteger a cada jugador y a cada tablero. 
+//tienen mutex para proteger a cada jugador y a cada tablero.
 
 typedef struct {
     int id;
@@ -57,11 +58,9 @@ typedef struct {
     char grid[3][3];    // estado del tablero: 'X', 'O', ' '
     int current_turn;   // ID del jugador que le toca
     bool active;        // 0 si el tablero no está en uso, 1 si está en uso
-    
+
     pthread_mutex_t lock;
     pthread_cond_t cond_turn; // pra coordinar los turnos de los jugadores
-    
-
 
 } Tablero;
 
@@ -78,3 +77,24 @@ typedef struct {
 
 } Partida;
 
+
+/* ===== estado global compartido (definido en main.c / matchmaking.c) ===== */
+extern Config config;
+
+extern Jugador *jugadores;   // arreglo de N jugadores
+extern Tablero *tableros;    // arreglo de K tableros
+
+extern int *lobby_espera;          // ids de jugadores esperando, en orden de llegada
+extern int  lobby_n;               // cuántos están esperando ahora
+extern pthread_mutex_t lobby_mutex; // protege lobby_espera y lobby_n
+
+/* ===== prototipos ===== */
+// matchmaking.c
+void *jugador_thread(void *arg);
+
+// gato.c
+int  check_winner(char board[3][3]);
+void init_grid(char board[3][3]);
+void print_grid(char board[3][3]);
+
+#endif // TIPOS_H

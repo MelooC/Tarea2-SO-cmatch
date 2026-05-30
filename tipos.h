@@ -59,6 +59,8 @@ typedef struct {
     int current_turn;   // ID del jugador que le toca
     bool active;        // 0 si el tablero no está en uso, 1 si está en uso
 
+    pthread_t thread;
+
     pthread_mutex_t lock;
     pthread_cond_t cond_turn; // pra coordinar los turnos de los jugadores
 
@@ -87,14 +89,19 @@ extern Tablero *tableros;    // arreglo de K tableros
 extern int *lobby_espera;          // ids de jugadores esperando, en orden de llegada
 extern int  lobby_n;               // cuántos están esperando ahora
 extern pthread_mutex_t lobby_mutex; // protege lobby_espera y lobby_n
+extern volatile bool keep_running;
 
 /* ===== prototipos ===== */
 // matchmaking.c
 void *jugador_thread(void *arg);
+void *tablero_thread(void *arg); 
+int buscar_rival(Jugador *yo);
 
 // gato.c
 int  check_winner(char board[3][3]);
 void init_grid(char board[3][3]);
 void print_grid(char board[3][3]);
 
+// tablero.c
+void actualizar_elo(Jugador *p1, Jugador *p2, int resultado_gato);
 #endif // TIPOS_H

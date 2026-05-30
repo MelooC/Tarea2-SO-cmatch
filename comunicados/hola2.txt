@@ -1,0 +1,214 @@
+holi, 
+
+en matchmaking.c: 
+
+-hice la función para emparejar, que busca el rival que cumple con las condiciones
+del ELO y el tiempo de espera mayor.
+
+-la función jugador_thread, la cambié para que queden los jugadores en espera real
+y le saqué el printf. ahora el jugador busca un rival con la función de buscar_rival y cuando lo
+encuentra comienza la partida. 
+para la partida, primero se busca un tablero que esté libre, lo ocupan y empieza. 
+
+cree la funcion para thread del tablero en tablero.c (en archivo diferente pq no ya no era sobre 
+matchmaking):
+-funcion tablero_thread junta a los jugadores y empieza la partida, llamando a las funciones del gato.c
+
+-como también el tablero actualiza el elo de los personajes, hice una funcion que siga con la 
+formula que dio el profe.
+
+actualicé lafuncion check_winner de gato.c para que también diera quién ganó,, solo decía que había
+un ganador pero no decía quien jasj
+
+hice que funcionara el jugador_thread con mutex condicional para que le avise por señal al rival
+que encontró un tablero libre, así están ambos despiertos.
+
+Le puse el Graceful Shutdown al main para que se pueda cerrar con Ctrl+C. "El programa debe aceptar 
+una señal de término (SIGINT). Al recibirla, no se iniciarán nuevas partidas, las partidas en 
+curso deben terminar normalmente. No puede haber threads colgados al terminar."
+
+en la tarea sale: en 3.3 "de la misma forma, el
+thread de cada jugador debe decidir autónomamente si reingresa al ciclo de matchmaking o si
+termina su ejecución, permitiendo un flujo variable de threads en el sistema." lo puse en el 
+jugador_thread.
+
+------------------------------------------------
+como resumen de lo que está hecho de la tarea y que falta :>
+
+ya está:
+    -matchmaking (ELO + Tiempo)
+
+    -simulación de Gato
+
+    -threads independientes de jugador y tablero
+
+    -actualización ELO con la formula
+
+    -graceful shutdown
+
+falta:
+    -monitoreo de la simulación, son las funciones del punto 4. de la tarea.
+
+    -Snapshot (Guardar estado), lo que sale en el punto 3.4 Graceful Shutdown y Restauración. 
+    "El programa debe almacenar en un archivo el estado del sistema al momento del
+    cierre, dicho estado debe ser reproducible para ejecutar su programa desde el archivo y reanudar
+    la ejecución tal como quedó al momento de terminar el programa."
+
+    -arreglar error del signal en main: (me sale "terminando..." para siempre pero no termina)
+                                        
+                                        // variable global
+                                        volatile bool keep_running = true;
+
+                                        // se ejecuta cuando se presiona Ctrl+C
+                                        void handle_sigint(int sig) {
+                                            (void)sig; // para evitar warning de compilación
+                                            keep_running = false; 
+                                            printf("\n[Sistema] Terminando...\n");
+                                        }
+
+    -sale medio raro el output,, es un error de sincronización. 
+
+    compilas igual que antes:
+
+    make
+    ./cmatch
+
+    a mi me aparece así: (no sé tampoco pq solo muestra dos tablas y no el maximo de 20 
+    que está en el .env)
+
+
+    Tablero 0: Jugador 1 marcó (1,2) con 'X'
+
+   |   |   
+-----------
+   |   | X 
+-----------
+   |   |   
+
+Tablero 1: Jugador 5 marcó (2,0) con 'X'
+
+   |   |   
+-----------
+   |   |   
+-----------
+ X |   |   
+
+Tablero 0: Jugador 94 marcó (2,2) con 'O'
+
+   |   |   
+-----------
+   |   | X 
+-----------
+   |   | O 
+
+Tablero 1: Jugador 99 marcó (2,1) con 'O'
+
+   |   |   
+-----------
+   |   |   
+-----------
+ X | O |   
+
+Tablero 0: Jugador 1 marcó (0,0) con 'X'
+
+ X |   |   
+-----------
+   |   | X 
+-----------
+   |   | O 
+
+Tablero 1: Jugador 5 marcó (0,2) con 'X'
+
+   |   | X 
+-----------
+   |   |   
+-----------
+ X | O |   
+
+Tablero 0: Jugador 94 marcó (1,0) con 'O'
+
+ X |   |   
+-----------
+Tablero 1: Jugador 99 marcó (1,2) con 'O'
+
+   |   | X 
+-----------
+   |   | O 
+-----------
+ X | O |   
+
+ O |   | X 
+-----------
+   |   | O 
+
+Tablero 1: Jugador 5 marcó (2,2) con 'X'
+
+   |   | X 
+-----------
+   |   | O 
+-----------
+Tablero 0: Jugador 1 marcó (0,1) con 'X'
+
+ X | X |   
+-----------
+ O |   | X 
+-----------
+   |   | O 
+ X | O | X 
+
+
+Tablero 1: Jugador 99 marcó (0,1) con 'O'
+
+   | O | X 
+-----------
+   |   | O 
+-----------
+ X | O | X 
+
+Tablero 0: Jugador 94 marcó (2,1) con 'O'
+
+ X | X |   
+-----------
+ O |   | X 
+-----------
+   | O | O 
+
+Tablero 1: Jugador 5 marcó (1,0) con 'X'
+
+   | O | X 
+-----------
+ X |   | O 
+-----------
+ X | O | X 
+
+Tablero 0: Jugador 1 marcó (1,1) con 'X'
+
+ X | X |   
+-----------
+ O | X | X 
+-----------
+   | O | O 
+
+Tablero 1: Jugador 99 marcó (1,1) con 'O'
+
+   | O | X 
+Tablero 0: Jugador 94 marcó (0,2) con 'O'
+
+ X | X | O 
+-----------
+ O | X | X 
+-----------
+   | O | O 
+
+-----------
+ X | O | O 
+-----------
+ X | O | X 
+
+Tablero 0: Jugador 1 marcó (2,0) con 'X'
+
+ X | X | O 
+-----------
+ O | X | X 
+-----------
+ X | O | O 

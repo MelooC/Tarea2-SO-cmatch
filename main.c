@@ -1,6 +1,17 @@
 #include "tipos.h"
+#include <signal.h>
 
 Config config;  // definición real (en tipos.h va como extern)
+
+// variable global
+volatile bool keep_running = true;
+
+// se ejecuta cuando se presiona Ctrl+C
+void handle_sigint(int sig) {
+    (void)sig; // para evitar warning de compilación
+    keep_running = false; 
+    printf("\n[Sistema] Terminando...\n");
+}
 
 /* ---- lectura del archivo de configuración (.env) ---- */
 void load_config(const char *filename) {
@@ -37,6 +48,10 @@ void load_config(const char *filename) {
 }
 
 int main(void) {
+
+    //registrar la señal
+    signal(SIGINT, handle_sigint);
+
     srand(time(NULL));            // semilla para aleatoriedad (ELO inicial, jugadas, etc.)
     load_config("config.env");
 

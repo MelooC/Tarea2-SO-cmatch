@@ -1,7 +1,8 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -std=c17
-LDFLAGS = -lpthread
+LDFLAGS = -lpthread -lm
 SRC     = main.c matchmaking.c gato.c
+SRC = main.c matchmaking.c gato.c tablero.c
 OBJ     = $(SRC:.c=.o)
 TARGET  = cmatch
 
